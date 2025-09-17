@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run preview)",
+      "Bash(vercel dev --debug)",
+      "Bash(lsof -ti:3000,3001,3002)",
+      "Bash(ps -p 61161,65815,67702,67834,71752 -o pid,command)",
+      "Bash(npm run dev)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(vercel dev --listen 5174)",
+      "Bash(lsof -ti:3000)",
+      "Bash(ps -p 20043 -o pid,command)",
+      "Bash(pkill -f \"vercel dev\")",
+      "Bash(lsof -ti:3000,5173,5174)",
+      "Bash(pkill -f \"vercel\")",
+      "Bash(ps -p 3349 -o pid,command)",
+      "Bash(kill 3349)",
+      "Bash(grep -E \"\\.(json|js|ts)$\")",
+      "Bash(vercel dev)",
+      "Bash(lsof -ti:3000,3001)",
+      "Bash(ps -p 65815 -o pid,command)",
+      "Bash(kill 65815)",
+      "Bash(npm run dev:vercel)",
+      "Bash(vercel build)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
