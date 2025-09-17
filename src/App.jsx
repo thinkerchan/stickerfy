@@ -1181,7 +1181,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans text-gray-800 flex items-center justify-center">
+    <div className="bg-gray-100 min-h-screen font-sans text-gray-800 flex items-center justify-center py-5">
        <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&display=swap');
           .font-googlesans { font-family: 'Google Sans', sans-serif; }
@@ -1437,6 +1437,7 @@ export default function App() {
             onSave={saveApiKey}
             t={t}
         />
+      <footer className="text-center text-gray-500 text-sm pb-5"><a href="https://github.com/thinkerchan/stickerfy" target="_blank" rel="noopener noreferrer">@thinkerchan</a></footer>
       </div>
     </div>
   );
