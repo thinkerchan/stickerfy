@@ -154,6 +154,77 @@ const ImageModal = ({ show, onClose, imageUrl, t }) => {
   );
 };
 
+// --- API Key Modal Component ---
+const ApiKeyModal = ({ show, onClose, onSave, t }) => {
+  const [apiKey, setApiKey] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (!show) return null;
+
+  const handleSave = () => {
+    if (!apiKey.trim()) {
+      alert(t('apiKeyInvalid'));
+      return;
+    }
+    setIsLoading(true);
+    onSave(apiKey.trim());
+    setIsLoading(false);
+  };
+
+  const handleClose = () => {
+    setApiKey('');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md relative">
+        <h3 className="text-xl font-semibold mb-4 text-center text-gray-800">{t('apiKeyRequired')}</h3>
+
+        <p className="text-gray-600 mb-4 text-sm">{t('apiKeyPrompt')}</p>
+
+        <div className="mb-4">
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={t('apiKeyPlaceholder')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+          />
+        </div>
+
+        <div className="mb-4">
+          <a
+            href={t('apiKeyHelpLink')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 text-sm underline"
+          >
+            {t('apiKeyHelp')} →
+          </a>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={handleClose}
+            className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? '...' : t('saveKey')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Sticker Sheet Modal Component ---
 const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAndroid, t }) => {
   const sheetContentRef = useRef(null);
@@ -495,6 +566,15 @@ const translations = {
         madeWithGemini: "Made with Gemini",
         nanoBananaPromo: "Edit your images with Nano Banana at gemini.google",
         gemStickersTitle: "GEM STICKERS",
+        apiKeyRequired: "API Key Required",
+        apiKeyPrompt: "Please enter your Gemini API key to generate stickers:",
+        apiKeyPlaceholder: "Enter your Gemini API key...",
+        apiKeyHelp: "Get your free API key from Google AI Studio",
+        apiKeyHelpLink: "https://ai.google.dev/",
+        saveKey: "Save & Continue",
+        cancel: "Cancel",
+        apiKeyInvalid: "Please enter a valid API key",
+        apiKeyStored: "API key saved successfully",
     },
     ja: {
         appSubtitle: "自撮りをステッカーに",
@@ -535,6 +615,15 @@ const translations = {
         madeWithGemini: "Gemini で作成",
         nanoBananaPromo: "gemini.google で Nano Banana を使って画像を編集",
         gemStickersTitle: "ジェムステッカー",
+        apiKeyRequired: "APIキーが必要",
+        apiKeyPrompt: "ステッカーを生成するにはGemini APIキーを入力してください：",
+        apiKeyPlaceholder: "Gemini APIキーを入力...",
+        apiKeyHelp: "Google AI Studioで無料のAPIキーを取得",
+        apiKeyHelpLink: "https://ai.google.dev/",
+        saveKey: "保存して続行",
+        cancel: "キャンセル",
+        apiKeyInvalid: "有効なAPIキーを入力してください",
+        apiKeyStored: "APIキーが正常に保存されました",
     },
     zh: {
         appSubtitle: "将任何自拍变成自定义贴纸集",
@@ -575,6 +664,15 @@ const translations = {
         madeWithGemini: "由 Gemini 制作",
         nanoBananaPromo: "在 gemini.google 上使用 Nano Banana 编辑您的图像",
         gemStickersTitle: "宝石贴纸",
+        apiKeyRequired: "需要API密钥",
+        apiKeyPrompt: "请输入您的Gemini API密钥以生成贴纸：",
+        apiKeyPlaceholder: "输入您的Gemini API密钥...",
+        apiKeyHelp: "从Google AI Studio获取免费API密钥",
+        apiKeyHelpLink: "https://ai.google.dev/",
+        saveKey: "保存并继续",
+        cancel: "取消",
+        apiKeyInvalid: "请输入有效的API密钥",
+        apiKeyStored: "API密钥已成功保存",
     }
 };
 
@@ -628,10 +726,49 @@ export default function App() {
   const [modalImageUrl, setModalImageUrl] = useState(null);
   const [showStickerSheetModal, setShowStickerSheetModal] = useState(false);
   const [language, setLanguage] = useState('en');
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKey, setApiKey] = useState(null);
 
   const t = useCallback((key) => {
     return translations[language][key] || translations['en'][key] || key;
   }, [language]);
+
+  // API Key management functions
+  const getApiKey = useCallback(() => {
+    // Try to get from state first
+    if (apiKey) return apiKey;
+
+    // Try to get from localStorage
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setApiKey(storedKey);
+      return storedKey;
+    }
+
+    // Try to get from environment (for local development)
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (envKey && envKey !== 'test_key_for_development') {
+      setApiKey(envKey);
+      return envKey;
+    }
+
+    return null;
+  }, [apiKey]);
+
+  const saveApiKey = useCallback((key) => {
+    setApiKey(key);
+    localStorage.setItem('gemini_api_key', key);
+    setShowApiKeyModal(false);
+  }, []);
+
+  const checkApiKeyRequired = useCallback(() => {
+    const currentKey = getApiKey();
+    if (!currentKey) {
+      setShowApiKeyModal(true);
+      return false;
+    }
+    return true;
+  }, [getApiKey]);
 
   useEffect(() => {
     const userLang = navigator.language || navigator.userLanguage;
@@ -669,11 +806,14 @@ export default function App() {
     }));
     setStylesWithRotation(initialStyles);
 
+    // Initialize API key from localStorage or environment
+    getApiKey();
+
     return () => {
       document.body.removeChild(jszipScript);
       document.body.removeChild(html2canvasScript);
     };
-  }, []);
+  }, [getApiKey]);
 
   useEffect(() => {
     if (stream && videoRef.current) {
@@ -845,13 +985,13 @@ export default function App() {
   };
 
   const makeApiCallWithRetry = async (payload, emotion) => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const currentApiKey = getApiKey();
 
-    if (!apiKey) {
-      throw new Error('VITE_GEMINI_API_KEY environment variable is not set. Please check your .env file.');
+    if (!currentApiKey) {
+      throw new Error('API key is required. Please set your Gemini API key.');
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${currentApiKey}`;
     let attempt = 0;
     const maxAttempts = 3;
     const initialDelay = 1000;
@@ -905,6 +1045,12 @@ export default function App() {
           setError(t('errorUploadProfilePic'));
           return;
       }
+
+      // Check if API key is available before proceeding
+      if (!checkApiKeyRequired()) {
+          return;
+      }
+
       setIsLoading(true);
       setError(null);
       setGeneratedStickers(Array(emotions.length).fill(null).map((_, i) => ({ emotion: emotions[i].key, isLoading: true })));
@@ -952,6 +1098,12 @@ export default function App() {
 
   const handleRegenerate = async (emotionToRegenerate) => {
     if (!uploadedImage) return;
+
+    // Check if API key is available before proceeding
+    if (!checkApiKeyRequired()) {
+        return;
+    }
+
     setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { ...s, isLoading: true, imageUrl: null } : s));
     setError(null);
 
@@ -1277,6 +1429,12 @@ export default function App() {
             uploadedImage={uploadedImage?.url}
             isIOS={isIOS}
             isAndroid={isAndroid}
+            t={t}
+        />
+        <ApiKeyModal
+            show={showApiKeyModal}
+            onClose={() => setShowApiKeyModal(false)}
+            onSave={saveApiKey}
             t={t}
         />
       </div>

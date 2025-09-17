@@ -24,7 +24,10 @@
       "Bash(ps -p 65815 -o pid,command)",
       "Bash(kill 65815)",
       "Bash(npm run dev:vercel)",
-      "Bash(vercel build)"
+      "Bash(vercel build)",
+      "Bash(vercel pull --yes)",
+      "Bash(vercel --prod)",
+      "WebFetch(domain:stickerfy-3a49j4b0n-testdog.vercel.app)"
     ],
     "deny": [],
     "ask": []
