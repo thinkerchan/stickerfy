@@ -1,5 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
+const fixURL = (url,skipProxy=false) => {
+  const proxyURL = import.meta.env.VITE_PROXY_URL;
+
+  if (proxyURL && !skipProxy) {
+    return `${proxyURL}+${url}`;
+  }
+  return url
+}
+
 // --- Helper Components & Icons ---
 
 // Icon for Upload
@@ -145,81 +154,10 @@ const ImageModal = ({ show, onClose, imageUrl, t }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={onClose}>
       <div className="relative p-4">
-        <img src={imageUrl} alt={t('enlargedStickerAlt')} className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+        <img src={fixURL(imageUrl)} alt={t('enlargedStickerAlt')} className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
         <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute -top-2 -right-2 p-2 bg-white rounded-full text-black hover:bg-gray-200 transition">
           <XIcon className="w-6 h-6" />
         </button>
-      </div>
-    </div>
-  );
-};
-
-// --- API Key Modal Component ---
-const ApiKeyModal = ({ show, onClose, onSave, t }) => {
-  const [apiKey, setApiKey] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  if (!show) return null;
-
-  const handleSave = () => {
-    if (!apiKey.trim()) {
-      alert(t('apiKeyInvalid'));
-      return;
-    }
-    setIsLoading(true);
-    onSave(apiKey.trim());
-    setIsLoading(false);
-  };
-
-  const handleClose = () => {
-    setApiKey('');
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md relative">
-        <h3 className="text-xl font-semibold mb-4 text-center text-gray-800">{t('apiKeyRequired')}</h3>
-
-        <p className="text-gray-600 mb-4 text-sm">{t('apiKeyPrompt')}</p>
-
-        <div className="mb-4">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={t('apiKeyPlaceholder')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onKeyPress={(e) => e.key === 'Enter' && handleSave()}
-          />
-        </div>
-
-        <div className="mb-4">
-          <a
-            href={t('apiKeyHelpLink')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 text-sm underline"
-          >
-            {t('apiKeyHelp')} →
-          </a>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={handleClose}
-            className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            {t('cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? '...' : t('saveKey')}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -291,7 +229,7 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
         const footerHeight = 100 * dpr;
         const gridWidth = (stickerSize * 4) + (stickerGap * 3);
         const gridHeight = (stickerSize * 2) + stickerGap;
-        const gridFooterGap = 40 * dpr; // Added space between sticker grid and footer
+        const gridFooterGap = 40 * dpr;
 
         canvas.width = gridWidth + padding * 2;
         canvas.height = headerHeight + gridHeight + footerHeight + padding * 2 + gridFooterGap;
@@ -314,7 +252,6 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
             ctx.translate(x + containerW / 2, y + containerH / 2);
             ctx.rotate(rotationDeg * Math.PI / 180);
 
-            // Draw border with shadow
             ctx.fillStyle = 'white';
             ctx.shadowColor = 'rgba(0,0,0,0.2)';
             ctx.shadowBlur = 8 * dpr;
@@ -324,12 +261,11 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
             ctx.beginPath();
             if (ctx.roundRect) {
                 ctx.roundRect(-containerW / 2, -containerH / 2, containerW, containerH, [borderRadius]);
-            } else { // Fallback for older browsers
+            } else {
                 ctx.rect(-containerW / 2, -containerH / 2, containerW, containerH);
             }
             ctx.fill();
 
-            // Reset shadow and draw the image
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
             ctx.shadowOffsetX = 0;
@@ -459,7 +395,7 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
           )}
           {staticSheetUrl && (
             <div>
-              <img src={staticSheetUrl} alt="Sticker Sheet" className="w-full h-auto object-contain rounded-md" />
+              <img src={fixURL(staticSheetUrl)} alt="Sticker Sheet" className="w-full h-auto object-contain rounded-md" />
               {isAndroid && (
                 <button
                   onClick={handleDownloadMobile}
@@ -482,21 +418,21 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
           <div ref={sheetContentRef} style={{ backgroundColor: '#E7E0CE' }} className="p-6 rounded-t-lg">
             <div className="flex justify-center items-center mb-6">
               <div className="flex items-center">
-                {uploadedImage && <img src={uploadedImage} alt="Uploaded photo" className="h-36 object-contain transform -rotate-12 border-4 border-white rounded-lg shadow-md" />}
+                {uploadedImage && <img src={fixURL(uploadedImage)} alt="Uploaded photo" className="h-36 object-contain transform -rotate-12 border-4 border-white rounded-lg shadow-md" />}
               </div>
               <div className="relative z-10 mx-4">
                 <h1 className="text-4xl md:text-5xl font-bold font-googlesans text-black tracking-wide py-4">{t('gemStickersTitle')}</h1>
               </div>
               <div className="flex items-center">
-                {stickers.find(s => s.emotion === 'Happy' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Happy' && s.imageUrl).imageUrl} alt="Happy sticker" className="h-20 object-contain transform -rotate-6 border-4 border-white rounded-lg shadow-md" />}
-                {stickers.find(s => s.emotion === 'Laughing' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Laughing' && s.imageUrl).imageUrl} alt="Laughing sticker" className="h-20 object-contain transform rotate-12 -ml-5 border-4 border-white rounded-lg shadow-md" />}
-                {stickers.find(s => s.emotion === 'Surprised' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Surprised' && s.imageUrl).imageUrl} alt="Surprised sticker" className="h-20 object-contain transform -rotate-3 -ml-5 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Happy' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Happy' && s.imageUrl).imageUrl, true)} alt="Happy sticker" className="h-20 object-contain transform -rotate-6 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Laughing' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Laughing' && s.imageUrl).imageUrl, true)} alt="Laughing sticker" className="h-20 object-contain transform rotate-12 -ml-5 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Surprised' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Surprised' && s.imageUrl).imageUrl)} alt="Surprised sticker" className="h-20 object-contain transform -rotate-3 -ml-5 border-4 border-white rounded-lg shadow-md" />}
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto p-2 rounded-md">
               {stickers.filter(s => s.imageUrl).map(sticker => (
                 <div key={sticker.emotion} className="flex flex-col items-center">
-                  <img src={sticker.imageUrl} alt={sticker.emotion} className="w-full h-auto object-contain rounded-lg bg-white shadow-sm" />
+                  <img src={fixURL(sticker.imageUrl, true)} alt={sticker.emotion} className="w-full h-auto object-contain rounded-lg bg-white shadow-sm" />
                 </div>
               ))}
             </div>
@@ -522,7 +458,6 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
     </div>
   );
 };
-
 
 // --- Main Application Component ---
 
@@ -566,15 +501,8 @@ const translations = {
         madeWithGemini: "Made with Gemini",
         nanoBananaPromo: "Edit your images with Nano Banana at gemini.google",
         gemStickersTitle: "GEM STICKERS",
-        apiKeyRequired: "API Key Required",
-        apiKeyPrompt: "Please enter your Gemini API key to generate stickers:",
-        apiKeyPlaceholder: "Enter your Gemini API key...",
-        apiKeyHelp: "Get your free API key from Google AI Studio",
-        apiKeyHelpLink: "https://ai.google.dev/",
-        saveKey: "Save & Continue",
-        cancel: "Cancel",
-        apiKeyInvalid: "Please enter a valid API key",
-        apiKeyStored: "API key saved successfully",
+        errorGeneratingStickers: "Failed to generate stickers. Please try again.",
+        errorBackendConnection: "Cannot connect to backend service. Please try again later.",
     },
     ja: {
         appSubtitle: "自撮りをステッカーに",
@@ -615,15 +543,8 @@ const translations = {
         madeWithGemini: "Gemini で作成",
         nanoBananaPromo: "gemini.google で Nano Banana を使って画像を編集",
         gemStickersTitle: "ジェムステッカー",
-        apiKeyRequired: "APIキーが必要",
-        apiKeyPrompt: "ステッカーを生成するにはGemini APIキーを入力してください：",
-        apiKeyPlaceholder: "Gemini APIキーを入力...",
-        apiKeyHelp: "Google AI Studioで無料のAPIキーを取得",
-        apiKeyHelpLink: "https://ai.google.dev/",
-        saveKey: "保存して続行",
-        cancel: "キャンセル",
-        apiKeyInvalid: "有効なAPIキーを入力してください",
-        apiKeyStored: "APIキーが正常に保存されました",
+        errorGeneratingStickers: "ステッカーの生成に失敗しました。もう一度お試しください。",
+        errorBackendConnection: "バックエンドサービスに接続できません。後でもう一度お試しください。",
     },
     zh: {
         appSubtitle: "将任何自拍变成自定义贴纸集",
@@ -664,32 +585,10 @@ const translations = {
         madeWithGemini: "由 Gemini 制作",
         nanoBananaPromo: "在 gemini.google 上使用 Nano Banana 编辑您的图像",
         gemStickersTitle: "宝石贴纸",
-        apiKeyRequired: "需要API密钥",
-        apiKeyPrompt: "请输入您的Gemini API密钥以生成贴纸：",
-        apiKeyPlaceholder: "输入您的Gemini API密钥...",
-        apiKeyHelp: "从Google AI Studio获取免费API密钥",
-        apiKeyHelpLink: "https://ai.google.dev/",
-        saveKey: "保存并继续",
-        cancel: "取消",
-        apiKeyInvalid: "请输入有效的API密钥",
-        apiKeyStored: "API密钥已成功保存",
+        errorGeneratingStickers: "生成贴纸失败。请重试。",
+        errorBackendConnection: "无法连接到后端服务。请稍后重试。",
     }
 };
-
-const styleOptions = [
-    { id: 'pop-art', en: 'Pop Art', ja: "ポップアート", zh: "波普艺术", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art_love.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art_love_out.png" },
-    { id: 'japanese-matchbox', en: 'Retro Japanese Matchbox', ja: "レトロマッチ箱", zh: "日本复古火柴盒", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox_out.png" },
-    { id: 'cartoon-dino', en: 'Cartoon Dino', ja: "恐竜漫画", zh: "卡通恐龙", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/dragon.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/dragon_out.png" },
-    { id: 'pixel-art', en: 'Pixel Art', ja: "ピクセルアート", zh: "像素艺术", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pixel.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pixel_out.png"},
-    { id: 'royal', en: 'Royal', ja: "王室", zh: "皇室风格", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/royal.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/royal_out.png"},
-    { id: 'football-sticker', en: 'Football Sticker', ja: "サッカーシール", zh: "足球贴纸", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/football.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/football_out.png" },
-    { id: 'claymation', en: 'Claymation', ja: "クレイアニメ", zh: "黏土动画", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/claymation.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/claymation_out.png"},
-    { id: 'vintage-bollywood', en: "Vintage Bollywood", ja: "ボリウッド", zh: "复古宝莱坞", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/bolly.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/bolly_out.png" },
-    { id: 'sticker-bomb', en: "Sticker Bomb", ja: "ステッカーボム", zh: "贴纸炸弹", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/bomb.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/bomb_out.png"},
-    { id: 'initial-d', en: 'Initial D Style', ja: "头文字D漫画风格", zh: "头文字D风格", imgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBM2jKbchAfueLeEO3lJioGRR4kb9fAAJGGgACpKdYVi9HKvFmvBP6NgQ.png", selectedImgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBM2jKbchAfueLeEO3lJioGRR4kb9fAAJGGgACpKdYVi9HKvFmvBP6NgQ.png", hidden: true},
-    { id: 'slam-dunk', en: 'Slam Dunk Style', ja: "灌篮高手漫画风格", zh: "灌篮高手风格", imgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBNGjKbgoaeBoNv4NqcQPu4-iiVYQtAAJHGgACpKdYVgqmTKcNGtjaNgQ.png", selectedImgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBNGjKbgoaeBoNv4NqcQPu4-iiVYQtAAJHGgACpKdYVgqmTKcNGtjaNgQ.png", hidden: true},
-    { id: 'doraemon', en: 'Doraemon Style', ja: "哆啦A梦漫画风格", zh: "哆啦A梦风格", imgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBNWjKbm-mtIW8X2ahnCsJETATlI5rAAJJGgACpKdYViC6IU-a--EUNgQ.png", selectedImgUrl: "https://telegram-file.vercel.app/api/file/BQACAgUAAxkDAAIBNWjKbm-mtIW8X2ahnCsJETATlI5rAAJJGgACpKdYViC6IU-a--EUNgQ.png", hidden: true},
-];
 
 const emotions = [
     { key: 'Happy', en: 'Happy', ja: 'ハッピー', zh: '开心' },
@@ -712,6 +611,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isZipping, setIsZipping] = useState(false);
   const [stylesWithRotation, setStylesWithRotation] = useState([]);
+  const [styleOptions, setStyleOptions] = useState([]);
   const styleContainerRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -726,49 +626,51 @@ export default function App() {
   const [modalImageUrl, setModalImageUrl] = useState(null);
   const [showStickerSheetModal, setShowStickerSheetModal] = useState(false);
   const [language, setLanguage] = useState('en');
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKey, setApiKey] = useState(null);
 
   const t = useCallback((key) => {
     return translations[language][key] || translations['en'][key] || key;
   }, [language]);
 
-  // API Key management functions
-  const getApiKey = useCallback(() => {
-    // Try to get from state first
-    if (apiKey) return apiKey;
+  // API 配置（去除末尾斜杠，避免出现双斜杠导致的协议相对 URL）
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-    // Try to get from localStorage
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-      setApiKey(storedKey);
-      return storedKey;
+  // 获取样式选项
+  const fetchStyleOptions = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/styles`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // 一些开发环境会把未知路由返回 index.html（text/html），这里避免 JSON 解析报错
+      const contentType = response.headers.get('content-type') || '';
+      const raw = await response.text();
+      let styles;
+      try {
+        styles = JSON.parse(raw);
+      } catch (e) {
+        throw new Error(`Expected JSON but got '${contentType}'. First 100 chars: ${raw.slice(0, 100)}`);
+      }
+
+      setStyleOptions(styles);
+      const initialStyles = styles.map(style => ({
+        ...style,
+        rotation: Math.random() * 12 - 6
+      }));
+      setStylesWithRotation(initialStyles);
+    } catch (error) {
+      console.error('Failed to fetch style options:', error);
+      // 使用默认样式选项作为后备
+      const defaultStyles = [
+        { id: 'pop-art', en: 'Pop Art', ja: "ポップアート", zh: "波普艺术", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art_love.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art_love_out.png" },
+        { id: 'japanese-matchbox', en: 'Retro Japanese Matchbox', ja: "レトロマッチ箱", zh: "日本复古火柴盒", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox_out.png" },
+        { id: 'cartoon-dino', en: 'Cartoon Dino', ja: "恐竜漫画", zh: "卡通恐龙", imgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/dragon.png", selectedImgUrl: "https://gstatic.com/synthidtextdemo/images/gemstickers/dot/dragon_out.png" },
+      ];
+      setStyleOptions(defaultStyles);
+      setStylesWithRotation(defaultStyles.map(style => ({ ...style, rotation: Math.random() * 12 - 6 })));
     }
-
-    // Try to get from environment (for local development)
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (envKey && envKey !== 'test_key_for_development') {
-      setApiKey(envKey);
-      return envKey;
-    }
-
-    return null;
-  }, [apiKey]);
-
-  const saveApiKey = useCallback((key) => {
-    setApiKey(key);
-    localStorage.setItem('gemini_api_key', key);
-    setShowApiKeyModal(false);
-  }, []);
-
-  const checkApiKeyRequired = useCallback(() => {
-    const currentKey = getApiKey();
-    if (!currentKey) {
-      setShowApiKeyModal(true);
-      return false;
-    }
-    return true;
-  }, [getApiKey]);
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     const userLang = navigator.language || navigator.userLanguage;
@@ -800,20 +702,14 @@ export default function App() {
     html2canvasScript.async = true;
     document.body.appendChild(html2canvasScript);
 
-    const initialStyles = styleOptions.map(style => ({
-      ...style,
-      rotation: Math.random() * 12 - 6
-    }));
-    setStylesWithRotation(initialStyles);
-
-    // Initialize API key from localStorage or environment
-    getApiKey();
+    // 获取样式选项
+    fetchStyleOptions();
 
     return () => {
       document.body.removeChild(jszipScript);
       document.body.removeChild(html2canvasScript);
     };
-  }, [getApiKey]);
+  }, [fetchStyleOptions]);
 
   useEffect(() => {
     if (stream && videoRef.current) {
@@ -846,7 +742,6 @@ export default function App() {
         window.removeEventListener('resize', checkScrollButtons);
     };
   }, [stylesWithRotation, checkScrollButtons]);
-
 
   const handleScroll = (direction) => {
       const el = styleContainerRef.current;
@@ -944,110 +839,9 @@ export default function App() {
     }
   };
 
-  const forceCharacter = "\n\n**Character** The generated character/person/animal must match the features of the person/character/animal in the uploaded reference image. keep the facial feature, hair style..."
-  const forceWhiteBackground = "\n\n**Background:** Plain solid white #FFFFFF background only (no background colors/elements)";
-  const skinTonePersistence = "ALWAYS PRESERVE the skin tone / hair style and other distict features of the uploaded character/person.";
-  const colorPalletPersistence = "First, describe the distinct features and style of the uploaded image in great detail e.g. hair style name, outfit name, and so on. Also, specify the color of each main element using its hexadecimal (HEX) code.";
-
-
-  const getStylePrompt = (style, emotion) => {
-      const profilePicInstruction = "The character should be customized based on the attached profile picture.";
-      switch (style) {
-        case 'moe-anime':
-            return `Create a single sticker in the 'moe-like' anime style. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The art should feature large, expressive eyes, a small and cute mouth and nose, and a generally youthful and endearing appearance. The lines should be clean and the colors bright and soft. The background should be simple, perhaps with some cute patterns or sparkles, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern.`;
-        case 'pop-art':
-            return `Create a single sticker in the distinct Pop Art style. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The image should feature bold, thick black outlines around all figures, objects, and text. Utilize a limited, flat color palette consisting of vibrant primary and secondary colors, applied in unshaded blocks, but maintain the person skin tone. Incorporate visible Ben-Day dots or halftone patterns to create shading, texture, and depth. The subject should display a dramatic expression. Include stylized text within speech bubbles or dynamic graphic shapes to represent sound effects (onomatopoeia). The overall aesthetic should be clean, graphic, and evoke a mass-produced, commercial art sensibility with a polished finish. The user's face from the uploaded photo must be the main character, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern..`;
-        case 'claymation':
-            return `Create a single sticker in the style of a classic claymation character. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The sticker should feature a claymation character where the picture is made to look like it is made from clay, and an interesting claymation landscape in the background, using the playfulness of claymation to exaggerate certain features depending on the emotion, and with clay-like sculpting of the face visible when expressing different emotions, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern.`;
-        case 'cartoon-dino':
-            return `Create a single sticker of an anthropomorphized cartoon dinosaur. ${profilePicInstruction} The character's face, customized from the attached profile picture, must express the emotion: '${emotion}'. The style should be cute and whimsical with bright, cheerful colors and a simple background suitable for a messaging app, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern.`;
-        case 'pixel-art':
-            return `Create a single sticker in the style of a retro Pixel Art piece. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The pixel art should be colorful, abstract, slightly retro-futuristic, combining 8 bit and glitch elements, and incorporating additional icons or accessories that represent the intended emotion, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern..`;
-        case 'sticker-bomb':
-            return `Stylize and augment the user pic in a stickerbomb style. ${profilePicInstruction} The character must express the emotion: '${emotion}'. Stickerbomb style with colorful graphic stickers surrounding the users face, also reflecting the emotion depicted, ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern. The user's face should always be in a cartoonish style like the surrounding stickers, and never show in a photorealistic style.`;
-        case 'football-sticker':
-            return `Generate a single sticker in the style of vintage 1970s soccer trading cards ${profilePicInstruction} The character must express the emotion: '${emotion}'.  The sticker should feature a headshot or upper torso portrait of a football player or manager Optionally, include a small, stylized team crest or a retro club name banner at the top. The entire sticker should have a clean, defined border and a slightly aged or matte finish to evoke a nostalgic, collectible feel.`;
-        case 'vintage-bollywood':
-            return `Change my image to a 1960's retro Bollywood themed poster. ${profilePicInstruction} Generate a poster with emotion: '${emotion}'.`;
-        case 'japanese-matchbox':
-            return `Make a single sticker in Japanese Showa-era matchbox art . ${profilePicInstruction} The character must express the emotion: '${emotion}'. Make a sticker in Japanese Showa-era matchbox art of a cat drinking coffee, retro graphic design, limited color palette, distressed paper texture and a retro-futuristic rocket ship, design for a 1960s Japanese matchbox label. Showa kitsch illustration of a person winking, simple lines, 2-color print style., ideally with an interesting outline shape that is not square or circular but closer to a dye-cut pattern.`;
-        case 'royal':
-            return `Create a single sticker transforming the pic into royalty - a king, queen, prince or princess - with unicorns and rainbows. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The image should feature a cool looking king, queen, prince or cute princess along with augmenting aces, spades, diamonds, hearts, unicorns, rainbows and clouds, ideally with an interesting outline shape that is not square or circular but closer to a die-cut pattern. The user's face should always be in a cartoonish style like the surrounding stickers, and never show in a photorealistic style.`;
-        case 'initial-d':
-            return `Create a single sticker in the style of the Initial D manga. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The art should feature sharp, dynamic lines, heavy use of black and white with screentone patterns for shading, and a gritty, realistic feel. The character should have the distinct 90s manga aesthetic. Include elements related to street racing, like speed lines. The sticker should have an interesting die-cut shape.`;
-        case 'slam-dunk':
-            return `Create a single sticker in the style of the Slam Dunk manga. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The art should be realistic and dynamic, with strong, confident line work. Emphasize expressive faces and hair, typical of 90s shonen manga. For comedic emotions, the style can shift to a super-deformed (chibi) look. The background should be simple, focusing on the character, perhaps with basketball-related elements or action lines.`;
-        case 'doraemon':
-            return `Create a single sticker in the iconic style of Doraemon manga. ${profilePicInstruction} The character must express the emotion: '${emotion}'. The art style should be simple, clean, and rounded. Use uniform, bold outlines and flat colors. The character's face should be simplified with large, expressive, simple circular eyes and a simple mouth, capturing the friendly aesthetic of Fujiko F. Fujio's work. The background should be minimal, keeping the focus on the character in a classic die-cut sticker format.`;
-        default:
-            return `Create a sticker of a person expressing '${emotion}' in a ${style} style, based on the uploaded photo.`;
-      }
-  };
-
-  const makeApiCallWithRetry = async (payload, emotion) => {
-    const currentApiKey = getApiKey();
-
-    if (!currentApiKey) {
-      throw new Error('API key is required. Please set your Gemini API key.');
-    }
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${currentApiKey}`;
-    let attempt = 0;
-    const maxAttempts = 3;
-    const initialDelay = 1000;
-
-    while (attempt < maxAttempts) {
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                let errorMessage = `API request failed with status ${response.status}`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.error?.message || errorMessage;
-                } catch (e) {
-                    // Not a JSON response, use the text content if available
-                    if (errorText) {
-                        errorMessage = errorText;
-                    }
-                }
-                throw new Error(errorMessage);
-            }
-
-            const result = await response.json();
-            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-            if (base64Data) {
-                return { emotion, imageUrl: `data:image/png;base64,${base64Data}` };
-            } else {
-                const safetyError = result?.promptFeedback?.blockReason;
-                throw new Error(safetyError ? `Generation blocked: ${safetyError}`: 'No image data in response.');
-            }
-        } catch (err) {
-            console.error(`Attempt ${attempt + 1} for emotion '${emotion}' failed:`, err);
-            attempt++;
-            if (attempt >= maxAttempts) {
-                return { emotion, imageUrl: null, error: err.message };
-            }
-            await new Promise(res => setTimeout(res, initialDelay * Math.pow(2, attempt)));
-        }
-    }
-    return { emotion, imageUrl: null, error: "Max retries reached." };
-  };
-
   const generateStickers = async () => {
       if (!uploadedImage) {
           setError(t('errorUploadProfilePic'));
-          return;
-      }
-
-      // Check if API key is available before proceeding
-      if (!checkApiKeyRequired()) {
           return;
       }
 
@@ -1056,40 +850,35 @@ export default function App() {
       setGeneratedStickers(Array(emotions.length).fill(null).map((_, i) => ({ emotion: emotions[i].key, isLoading: true })));
       setLoadingMessage(t('generatingStickers'));
 
-      const stickerPromises = emotions.map(({ key: emotion }, index) => {
-          setTimeout(() => setLoadingMessage(t('generatingStickers')), index * 200);
+      try {
+          const response = await fetch(`${API_BASE_URL}/api/generate-stickers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  image: uploadedImage,
+                  style: selectedStyle,
+                  emotions: emotions.map(e => e.key)
+              })
+          });
 
-          const userPrompt = getStylePrompt(selectedStyle, emotion);
-          let fullPrompt = ""
-          switch(selectedStyle) {
-            case "vintage-bollywood":
-              fullPrompt = colorPalletPersistence + userPrompt + skinTonePersistence;
-              break;
-            case "cartoon-dino":
-              fullPrompt = colorPalletPersistence + userPrompt + forceWhiteBackground;
-              break;
-            default:
-              fullPrompt = colorPalletPersistence + userPrompt + forceCharacter + forceWhiteBackground + skinTonePersistence;
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
           }
 
-          const payload = {
-              contents: [{
-                  parts: [
-                      { text: fullPrompt },
-                      { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }
-                  ]
-              }],
-              generationConfig: { responseModalities: ['IMAGE'], },
-          };
-          return makeApiCallWithRetry(payload, emotion);
-      });
+          const ct1 = response.headers.get('content-type') || '';
+          const raw1 = await response.text();
+          let data;
+          try {
+            data = JSON.parse(raw1);
+          } catch (e) {
+            throw new Error(`Invalid JSON from /api/generate-stickers (got ${ct1}). First 100 chars: ${raw1.slice(0,100)}`);
+          }
+          setGeneratedStickers(data.results.map(r => ({ ...r, isLoading: false })));
 
-      try {
-          const results = await Promise.all(stickerPromises);
-          setGeneratedStickers(results.map(r => ({ ...r, isLoading: false })));
-      } catch (err) {
-          console.error("An unexpected error occurred during sticker generation:", err);
-          setError(t('errorOccurred'));
+      } catch (error) {
+          console.error('Error generating stickers:', error);
+          setError(t('errorBackendConnection'));
+          setGeneratedStickers([]);
       } finally {
           setIsLoading(false);
           setLoadingMessage('');
@@ -1099,39 +888,38 @@ export default function App() {
   const handleRegenerate = async (emotionToRegenerate) => {
     if (!uploadedImage) return;
 
-    // Check if API key is available before proceeding
-    if (!checkApiKeyRequired()) {
-        return;
-    }
-
     setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { ...s, isLoading: true, imageUrl: null } : s));
     setError(null);
 
-    const userPrompt = getStylePrompt(selectedStyle, emotionToRegenerate);
-    let fullPrompt = ""
-    switch(selectedStyle) {
-      case "vintage-bollywood":
-        fullPrompt = colorPalletPersistence + userPrompt + skinTonePersistence;
-        break;
-      case "cartoon-dino":
-        fullPrompt = colorPalletPersistence + userPrompt + forceWhiteBackground;
-        break;
-      default:
-        fullPrompt = colorPalletPersistence + userPrompt + forceCharacter + forceWhiteBackground + skinTonePersistence;
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/generate-single-sticker`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image: uploadedImage,
+                style: selectedStyle,
+                emotion: emotionToRegenerate
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const ct2 = response.headers.get('content-type') || '';
+        const raw2 = await response.text();
+        let result;
+        try {
+          result = JSON.parse(raw2);
+        } catch (e) {
+          throw new Error(`Invalid JSON from /api/generate-single-sticker (got ${ct2}). First 100 chars: ${raw2.slice(0,100)}`);
+        }
+        setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { ...result, isLoading: false } : s));
+
+    } catch (error) {
+        console.error('Error regenerating sticker:', error);
+        setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { emotion: emotionToRegenerate, isLoading: false, imageUrl: null, error: 'Regeneration failed' } : s));
     }
-
-    const payload = {
-      contents: [{
-        parts: [
-          { text: fullPrompt },
-          { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }
-        ]
-      }],
-      generationConfig: { responseModalities: ['IMAGE'] },
-    };
-
-    const result = await makeApiCallWithRetry(payload, emotionToRegenerate);
-    setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { ...result, isLoading: false } : s));
   };
 
   const handleDownloadSingle = (imageUrl, emotion) => {
@@ -1197,18 +985,18 @@ export default function App() {
             </select>
         </div>
         <header className="relative h-64 md:h-72 bg-[#F2EFEF] overflow-hidden">
-            <img className="absolute h-full w-full object-cover" src="https://gstatic.com/synthidtextdemo/images/gemstickers/header/bg_header.png" alt="Header background" />
-            <img className="hidden md:block absolute h-32 object-contain -left-8 rotate-12" src="https://gstatic.com/synthidtextdemo/images/gemstickers/dot/football.png" alt="Football sticker"/>
-            <img className="hidden md:block absolute h-32 object-contain left-28 -top-12" src="https://gstatic.com/synthidtextdemo/images/gemstickers/dot/claymation.png" alt="Claymation sticker" />
-            <img className="hidden md:block absolute h-24 object-contain left-16" src="https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pixel.png" alt="Pixel art sticker" />
-            <img className="hidden md:block absolute h-32 md:h-48 object-contain right-2 md:right-4 -top-8 -rotate-6" src="https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox.png" alt="Matchbox sticker" />
-            <img className="hidden md:block absolute h-28 object-contain right-16 bottom-16 rotate-12" src="https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art.png" alt="Pop art sticker"/>
-            <img className="hidden md:block absolute h-32 md:h-48 object-contain -right-8 md:-right-4 -bottom-8 md:-bottom-12 -rotate-12" src="https://gstatic.com/synthidtextdemo/images/gemstickers/header/sticker_sample_0.png" alt="Sticker sample"/>
+            <img className="absolute h-full w-full object-cover" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/header/bg_header.png")} alt="Header background" />
+            <img className="hidden md:block absolute h-32 object-contain -left-8 rotate-12" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/dot/football.png")} alt="Football sticker"/>
+            <img className="hidden md:block absolute h-32 object-contain left-28 -top-12" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/dot/claymation.png")} alt="Claymation sticker" />
+            <img className="hidden md:block absolute h-24 object-contain left-16" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pixel.png")} alt="Pixel art sticker" />
+            <img className="hidden md:block absolute h-32 md:h-48 object-contain right-2 md:right-4 -top-8 -rotate-6" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/dot/matchbox.png")} alt="Matchbox sticker" />
+            <img className="hidden md:block absolute h-28 object-contain right-16 bottom-16 rotate-12" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/dot/pop_art.png")} alt="Pop art sticker"/>
+            <img className="hidden md:block absolute h-32 md:h-48 object-contain -right-8 md:-right-4 -bottom-8 md:-bottom-12 -rotate-12" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/header/sticker_sample_0.png")} alt="Sticker sample"/>
             <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col w-5/6 md:w-2/3">
-                <img className="object-contain h-32 md:h-48 -mt-8" src="https://gstatic.com/synthidtextdemo/images/gemstickers/header/gemsticker_logo_3.png" />
+                <img className="object-contain h-32 md:h-48 -mt-8" src={fixURL("https://gstatic.com/synthidtextdemo/images/gemstickers/header/gemsticker_logo_3.png")} />
                 <p className="-mt-4 md:-mt-8 font-medium text-xs md:text-sm italic text-end">{t('appSubtitle')}</p>
             </div>
-            <img className="hidden md:block absolute h-48 object-contain -bottom-7 left-1/3 -translate-x-5" src="https://www.gstatic.com/synthidtextdemo/images/gemstickers/4x/moe_anime.png" alt="Anime sticker"/>
+            <img className="hidden md:block absolute h-48 object-contain -bottom-7 left-1/3 -translate-x-5" src={fixURL("https://www.gstatic.com/synthidtextdemo/images/gemstickers/4x/moe_anime.png")} alt="Anime sticker"/>
         </header>
         <div className="grid grid-cols-1 gap-8 md:p-0 lg:p-6 mt-8">
           <div className="flex flex-col space-y-8">
@@ -1279,7 +1067,7 @@ export default function App() {
                           }}
                         >
                           <div className={`w-48 m-0`} hidden={style.hidden===true}>
-                              <img className={`w-48 object-contain overflow-visible m-0`} src={selectedStyle === style.id ? style.selectedImgUrl : style.imgUrl} alt={style[language] || style['en']} />
+                              <img className={`w-48 object-contain overflow-visible m-0`} src={fixURL(selectedStyle === style.id ? style.selectedImgUrl : style.imgUrl)} alt={style[language] || style['en']} />
                               <p className={`text-center ${selectedStyle === style.id ? 'font-bold' : ''}`}>{style[language] || style['en']}</p>
                           </div>
                         </button>
@@ -1431,15 +1219,8 @@ export default function App() {
             isAndroid={isAndroid}
             t={t}
         />
-        <ApiKeyModal
-            show={showApiKeyModal}
-            onClose={() => setShowApiKeyModal(false)}
-            onSave={saveApiKey}
-            t={t}
-        />
       <footer className="text-center text-gray-500 text-sm pb-5"><a href="https://github.com/thinkerchan/stickerfy" target="_blank" rel="noopener noreferrer">@thinkerchan</a></footer>
       </div>
     </div>
   );
 }
-

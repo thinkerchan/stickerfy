@@ -18,7 +18,13 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    open: true
+    open: true,
+    proxy: {
+      '/api': {
+        target: `http://localhost:${process.env.API_PORT || 3000}`,
+        changeOrigin: true
+      }
+    }
   },
   preview: {
     port: 4173,

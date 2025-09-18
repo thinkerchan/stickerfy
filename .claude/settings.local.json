@@ -27,7 +27,8 @@
       "Bash(vercel build)",
       "Bash(vercel pull --yes)",
       "Bash(vercel --prod)",
-      "WebFetch(domain:stickerfy-3a49j4b0n-testdog.vercel.app)"
+      "WebFetch(domain:stickerfy-3a49j4b0n-testdog.vercel.app)",
+      "Bash(mkdir -p frontend backend)"
     ],
     "deny": [],
     "ask": []
