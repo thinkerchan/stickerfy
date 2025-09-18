@@ -1,12 +1,24 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
-const fixURL = (url,skipProxy=false) => {
-  const proxyURL = import.meta.env.VITE_PROXY_URL;
+const fixURL = (url, skipProxy = false) => {
+  if (!url || typeof url !== 'string') return url;
+  const u = url.trim();
+  // Base64 data URLs 或 blob 对象 URL 直接返回，不走代理
+  if (u.startsWith('data:') || u.startsWith('blob:')) return u;
 
-  if (proxyURL && !skipProxy) {
-    return `${proxyURL}+${url}`;
+  const proxyURL = import.meta.env.VITE_PROXY_URL;
+  if (!proxyURL || skipProxy) return u;
+
+  // 已经是代理地址，直接返回
+  if (u.startsWith(proxyURL)) return u;
+
+  // 仅对 http/https 绝对地址尝试代理
+  if (/^https?:\/\//i.test(u)) {
+    return `${proxyURL}+${u}`;
   }
-  return url
+
+  // 其它相对/同源路径直接返回
+  return u;
 }
 
 // --- Helper Components & Icons ---
@@ -154,7 +166,7 @@ const ImageModal = ({ show, onClose, imageUrl, t }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={onClose}>
       <div className="relative p-4">
-        <img src={fixURL(imageUrl)} alt={t('enlargedStickerAlt')} className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+        <img src={imageUrl} alt={t('enlargedStickerAlt')} className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
         <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute -top-2 -right-2 p-2 bg-white rounded-full text-black hover:bg-gray-200 transition">
           <XIcon className="w-6 h-6" />
         </button>
@@ -395,7 +407,7 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
           )}
           {staticSheetUrl && (
             <div>
-              <img src={fixURL(staticSheetUrl)} alt="Sticker Sheet" className="w-full h-auto object-contain rounded-md" />
+              <img src={staticSheetUrl} alt="Sticker Sheet" className="w-full h-auto object-contain rounded-md" />
               {isAndroid && (
                 <button
                   onClick={handleDownloadMobile}
@@ -418,21 +430,21 @@ const StickerSheetModal = ({ show, onClose, stickers, uploadedImage, isIOS, isAn
           <div ref={sheetContentRef} style={{ backgroundColor: '#E7E0CE' }} className="p-6 rounded-t-lg">
             <div className="flex justify-center items-center mb-6">
               <div className="flex items-center">
-                {uploadedImage && <img src={fixURL(uploadedImage)} alt="Uploaded photo" className="h-36 object-contain transform -rotate-12 border-4 border-white rounded-lg shadow-md" />}
+                {uploadedImage?.url && <img src={uploadedImage.url} alt="Uploaded photo" className="h-36 object-contain transform -rotate-12 border-4 border-white rounded-lg shadow-md" />}
               </div>
               <div className="relative z-10 mx-4">
                 <h1 className="text-4xl md:text-5xl font-bold font-googlesans text-black tracking-wide py-4">{t('gemStickersTitle')}</h1>
               </div>
               <div className="flex items-center">
-                {stickers.find(s => s.emotion === 'Happy' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Happy' && s.imageUrl).imageUrl, true)} alt="Happy sticker" className="h-20 object-contain transform -rotate-6 border-4 border-white rounded-lg shadow-md" />}
-                {stickers.find(s => s.emotion === 'Laughing' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Laughing' && s.imageUrl).imageUrl, true)} alt="Laughing sticker" className="h-20 object-contain transform rotate-12 -ml-5 border-4 border-white rounded-lg shadow-md" />}
-                {stickers.find(s => s.emotion === 'Surprised' && s.imageUrl) && <img src={fixURL(stickers.find(s => s.emotion === 'Surprised' && s.imageUrl).imageUrl)} alt="Surprised sticker" className="h-20 object-contain transform -rotate-3 -ml-5 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Happy' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Happy' && s.imageUrl).imageUrl} alt="Happy sticker" className="h-20 object-contain transform -rotate-6 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Laughing' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Laughing' && s.imageUrl).imageUrl} alt="Laughing sticker" className="h-20 object-contain transform rotate-12 -ml-5 border-4 border-white rounded-lg shadow-md" />}
+                {stickers.find(s => s.emotion === 'Surprised' && s.imageUrl) && <img src={stickers.find(s => s.emotion === 'Surprised' && s.imageUrl).imageUrl} alt="Surprised sticker" className="h-20 object-contain transform -rotate-3 -ml-5 border-4 border-white rounded-lg shadow-md" />}
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto p-2 rounded-md">
               {stickers.filter(s => s.imageUrl).map(sticker => (
                 <div key={sticker.emotion} className="flex flex-col items-center">
-                  <img src={fixURL(sticker.imageUrl, true)} alt={sticker.emotion} className="w-full h-auto object-contain rounded-lg bg-white shadow-sm" />
+                  <img src={sticker.imageUrl} alt={sticker.emotion} className="w-full h-auto object-contain rounded-lg bg-white shadow-sm" />
                 </div>
               ))}
             </div>
@@ -969,14 +981,14 @@ export default function App() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans text-gray-800 flex items-center justify-center py-5">
+    <div className="bg-gray-100 min-h-screen font-sans text-gray-800 flex items-center justify-center md:py-5 sm:p-0">
        <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&display=swap');
           .font-googlesans { font-family: 'Google Sans', sans-serif; }
           .no-scrollbar::-webkit-scrollbar { display: none; }
           .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
-      <div className="container mx-auto max-w-5xl w-full bg-white rounded-2xl shadow-2xl p-0 overflow-hidden relative">
+      <div className="container mx-auto max-w-5xl w-full bg-white md:rounded-2xl shadow-2xl p-0 overflow-hidden relative">
         <div className="absolute top-4 right-4 z-30">
             <select onChange={(e) => setLanguage(e.target.value)} value={language} className="bg-white bg-opacity-80 backdrop-blur-sm rounded-md py-2 px-3 border-2 border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                 <option value="en">English</option>
